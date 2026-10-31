@@ -20,6 +20,11 @@ const {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === "production";
+const sessionSameSite = process.env.SESSION_COOKIE_SAME_SITE || (isProduction ? "none" : "lax");
+
+// Render y otros proxies terminan HTTPS antes de llegar a Express.
+app.set("trust proxy", 1);
 const {
   getInventory,
   setStock,
@@ -80,8 +85,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // Desarrollo local; cambiar al publicar con HTTPS
-      sameSite: "lax",
+      secure: isProduction, // Desarrollo local; cambiar al publicar con HTTPS
+      sameSite: sessionSameSite,
       maxAge: 1000 * 60 * 60 * 8,
     },
   }),
@@ -213,8 +218,8 @@ app.post("/api/admin/logout", (req, res) => {
 
     res.clearCookie("sakka_admin_session", {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: sessionSameSite,
     });
 
     return res.json({ ok: true });
@@ -1403,7 +1408,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
 // ======================================================
 
 app.listen(PORT, () => {
-  console.log(`Backend SAKKA disponible en http://localhost:${PORT}`);
+  console.log(`Backend SAKKA escuchando en puerto ${PORT}`);
 
   console.log("Cliente de Mercado Pago configurado.");
 });

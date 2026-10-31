@@ -4,13 +4,15 @@ const path = require("path");
 const fs = require("fs");
 
 // La base se guarda en server/data/sakka.db
-const dataDirectory = path.join(__dirname, "..", "data");
+const databasePath = process.env.DB_PATH
+  ? path.resolve(process.env.DB_PATH)
+  : path.join(__dirname, "..", "data", "sakka.db");
+
+const dataDirectory = path.dirname(databasePath);
 
 if (!fs.existsSync(dataDirectory)) {
   fs.mkdirSync(dataDirectory, { recursive: true });
 }
-
-const databasePath = path.join(dataDirectory, "sakka.db");
 const db = new Database(databasePath);
 
 db.pragma("foreign_keys = ON");

@@ -1,8 +1,9 @@
+import { API_URL } from "./api";
 
 import { useEffect, useState } from "react";
 import { Package, Search, Truck, CheckCircle2 } from "lucide-react";
 
-const API = "http://localhost:3000/api/tracking";
+const API = `${API_URL}/api/tracking`;
 
 const shippingSteps = [
   { value: "pending", label: "Pendiente" },

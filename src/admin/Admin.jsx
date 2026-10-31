@@ -1,3 +1,4 @@
+import { API_URL } from "../api";
 import { useCallback, useEffect, useState } from "react";
 import {
   Package,
@@ -13,7 +14,7 @@ import {
 import "./admin.css";
 import Inventory from "./Inventory.jsx";
 
-const API = "http://localhost:3000/api/admin";
+const API = `${API_URL}/api/admin`;
 
 const money = (value) =>
   new Intl.NumberFormat("es-AR", {
@@ -89,7 +90,7 @@ export default function Admin() {
       }
     }, 8000);
 
-    fetch("http://localhost:3000/api/admin/me", {
+    fetch(`${API}/me`, {
       credentials: "include",
     })
       .then(async (response) => {
