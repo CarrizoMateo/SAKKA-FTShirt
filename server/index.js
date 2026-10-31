@@ -498,7 +498,7 @@ app.get("/api/inventory", (req, res) => {
 app.get("/api/mp-config", (req, res) => {
   res.json({
     configured: Boolean(process.env.MP_ACCESS_TOKEN),
-    environment: "test",
+    environment: process.env.MP_ENVIRONMENT || "test",
   });
 });
 
