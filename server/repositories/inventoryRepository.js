@@ -1,5 +1,4 @@
-
-const db = require("../db/database");
+const { pool, query } = require("../db/database");
 
 const SIZES = ["S", "M", "L", "XL", "XXL"];
 
@@ -21,204 +20,193 @@ const PRODUCTS = [
   { id: "15", name: "Napoli NR 1985/86" },
 ];
 
-// Inventario independiente por modelo y talle.
-db.exec(`
-  CREATE TABLE IF NOT EXISTS inventory (
-    product_id TEXT NOT NULL,
-    product_name TEXT NOT NULL,
-    size TEXT NOT NULL CHECK (size IN ('S', 'M', 'L', 'XL', 'XXL')),
-    quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-    configured INTEGER NOT NULL DEFAULT 0 CHECK (configured IN (0, 1)),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    PRIMARY KEY (product_id, size)
-  );
-
-  CREATE TABLE IF NOT EXISTS inventory_movements (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    external_reference TEXT NOT NULL,
-    product_id TEXT NOT NULL,
-    size TEXT NOT NULL,
-    quantity INTEGER NOT NULL CHECK (quantity > 0),
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE (external_reference, product_id, size)
-  );
-`);
-
-// Crear las combinaciones sin establecer stock inicial.
-const insertInitial = db.prepare(`
-  INSERT OR IGNORE INTO inventory
-    (product_id, product_name, size, quantity, configured)
-  VALUES (?, ?, ?, 0, 0)
-`);
-
-const initialize = db.transaction(() => {
-  for (const product of PRODUCTS) {
-    for (const size of SIZES) {
-      insertInitial.run(product.id, product.name, size);
-
-      db.prepare(`
-        UPDATE inventory
-        SET product_name = ?
-        WHERE product_id = ? AND size = ?
-      `).run(product.name, product.id, size);
+async function initializeInventory() {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const product of PRODUCTS) {
+      for (const size of SIZES) {
+        await client.query(
+          `
+            INSERT INTO inventory (product_id, product_name, size, quantity, configured)
+            VALUES ($1, $2, $3, 0, 0)
+            ON CONFLICT (product_id, size)
+            DO UPDATE SET product_name = EXCLUDED.product_name
+          `,
+          [product.id, product.name, size],
+        );
+      }
     }
+    await client.query("COMMIT");
+    console.log("Inventario de SAKKA inicializado.");
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
   }
-});
-
-initialize();
-
-function getInventory() {
-  return db.prepare(`
-    SELECT product_id, product_name, size, quantity, configured, updated_at
-    FROM inventory
-    ORDER BY product_name, CASE size
-      WHEN 'S' THEN 1
-      WHEN 'M' THEN 2
-      WHEN 'L' THEN 3
-      WHEN 'XL' THEN 4
-      WHEN 'XXL' THEN 5
-    END
-  `).all();
 }
 
-function setStock(productId, size, quantity) {
-  const product = PRODUCTS.find((p) => p.id === String(productId));
+async function getInventory() {
+  const result = await query(
+    `
+      SELECT product_id, product_name, size, quantity, configured, updated_at
+      FROM inventory
+      ORDER BY product_name,
+        CASE size
+          WHEN 'S' THEN 1
+          WHEN 'M' THEN 2
+          WHEN 'L' THEN 3
+          WHEN 'XL' THEN 4
+          WHEN 'XXL' THEN 5
+        END
+    `,
+  );
+  return result.rows;
+}
 
+async function setStock(productId, size, quantity) {
+  const product = PRODUCTS.find((item) => item.id === String(productId));
   if (!product) throw new Error("Producto inexistente.");
   if (!SIZES.includes(size)) throw new Error("Talle inválido.");
   if (!Number.isSafeInteger(quantity) || quantity < 0) {
     throw new Error("El stock debe ser un entero mayor o igual a cero.");
   }
 
-  db.prepare(`
-    UPDATE inventory
-    SET quantity = ?,
-        configured = 1,
-        updated_at = datetime('now')
-    WHERE product_id = ? AND size = ?
-  `).run(quantity, product.id, size);
+  const result = await query(
+    `
+      UPDATE inventory
+      SET quantity = $1, configured = 1, updated_at = NOW()
+      WHERE product_id = $2 AND size = $3
+      RETURNING product_id, product_name, size, quantity, configured, updated_at
+    `,
+    [quantity, product.id, size],
+  );
 
-  return db.prepare(`
-    SELECT product_id, product_name, size, quantity, configured, updated_at
-    FROM inventory
-    WHERE product_id = ? AND size = ?
-  `).get(product.id, size);
+  if (!result.rows[0]) throw new Error("No se encontró el talle en el inventario.");
+  return result.rows[0];
 }
 
 /*
- * Descuenta el stock una sola vez por pedido.
- * Debe llamarse exclusivamente cuando el pago fue verificado
- * como aprobado. Si falta stock, revierte todos los descuentos.
+ * Descuenta stock una sola vez por pedido, únicamente después de verificar
+ * el pago. Los bloqueos y la transacción evitan dobles descuentos por webhook.
  */
-function deductApprovedOrderStock(externalReference) {
-  const deduct = db.transaction(() => {
-    const order = db.prepare(`
-      SELECT id, payment_status
-      FROM orders
-      WHERE external_reference = ?
-    `).get(externalReference);
+async function deductApprovedOrderStock(externalReference) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const orderResult = await client.query(
+      `
+        SELECT id, payment_status
+        FROM orders
+        WHERE external_reference = $1
+        FOR UPDATE
+      `,
+      [externalReference],
+    );
+    const order = orderResult.rows[0];
 
     if (!order) throw new Error("Pedido inexistente.");
-
     if (order.payment_status !== "approved") {
       throw new Error("El pedido todavía no está aprobado.");
     }
 
-    const items = db.prepare(`
-      SELECT product_id, product_name, size, SUM(quantity) AS quantity
-      FROM order_items
-      WHERE order_id = ?
-      GROUP BY product_id, product_name, size
-    `).all(order.id);
-
+    const itemsResult = await client.query(
+      `
+        SELECT product_id, product_name, size, SUM(quantity)::INTEGER AS quantity
+        FROM order_items
+        WHERE order_id = $1
+        GROUP BY product_id, product_name, size
+      `,
+      [order.id],
+    );
+    const items = itemsResult.rows;
     if (!items.length) throw new Error("El pedido no tiene productos.");
 
-    // Reintento de un webhook: no volver a descontar.
-    const alreadyDeducted = db.prepare(`
-      SELECT 1
-      FROM inventory_movements
-      WHERE external_reference = ?
-      LIMIT 1
-    `).get(externalReference);
-
-    if (alreadyDeducted) {
+    const alreadyDeducted = await client.query(
+      "SELECT 1 FROM inventory_movements WHERE external_reference = $1 LIMIT 1",
+      [externalReference],
+    );
+    if (alreadyDeducted.rowCount > 0) {
+      await client.query("COMMIT");
       return { deducted: false, reason: "already_processed" };
     }
 
-    // Validar todo antes de modificar cualquier cantidad.
     for (const item of items) {
       if (!item.size || !SIZES.includes(item.size)) {
         throw new Error(
-          `El producto ${item.product_name} no tiene un talle válido.`
+          `El producto ${item.product_name} no tiene un talle válido.`,
         );
       }
 
-      const stock = db.prepare(`
-        SELECT quantity, configured
-        FROM inventory
-        WHERE product_id = ? AND size = ?
-      `).get(String(item.product_id), item.size);
+      const stockResult = await client.query(
+        `
+          SELECT quantity, configured
+          FROM inventory
+          WHERE product_id = $1 AND size = $2
+          FOR UPDATE
+        `,
+        [String(item.product_id), item.size],
+      );
+      const stock = stockResult.rows[0];
 
-      if (!stock || stock.configured !== 1) {
+      if (!stock || Number(stock.configured) !== 1) {
         throw new Error(
-          `Falta configurar el stock de ${item.product_name}, talle ${item.size}.`
+          `Falta configurar el stock de ${item.product_name}, talle ${item.size}.`,
         );
       }
-
-      if (stock.quantity < Number(item.quantity)) {
+      if (Number(stock.quantity) < Number(item.quantity)) {
         throw new Error(
-          `Stock insuficiente para ${item.product_name}, talle ${item.size}.`
+          `Stock insuficiente para ${item.product_name}, talle ${item.size}.`,
         );
       }
     }
-
-    const decrement = db.prepare(`
-      UPDATE inventory
-      SET quantity = quantity - ?,
-          updated_at = datetime('now')
-      WHERE product_id = ?
-        AND size = ?
-        AND configured = 1
-        AND quantity >= ?
-    `);
-
-    const insertMovement = db.prepare(`
-      INSERT INTO inventory_movements
-        (external_reference, product_id, size, quantity)
-      VALUES (?, ?, ?, ?)
-    `);
 
     for (const item of items) {
       const quantity = Number(item.quantity);
-
-      const result = decrement.run(
-        quantity,
-        String(item.product_id),
-        item.size,
-        quantity
+      const result = await client.query(
+        `
+          UPDATE inventory
+          SET quantity = quantity - $1, updated_at = NOW()
+          WHERE product_id = $2
+            AND size = $3
+            AND configured = 1
+            AND quantity >= $1
+          RETURNING product_id
+        `,
+        [quantity, String(item.product_id), item.size],
       );
 
-      if (result.changes !== 1) {
+      if (result.rowCount !== 1) {
         throw new Error(
-          `No se pudo descontar el stock de ${item.product_name}, talle ${item.size}.`
+          `No se pudo descontar el stock de ${item.product_name}, talle ${item.size}.`,
         );
       }
 
-      insertMovement.run(
-        externalReference,
-        String(item.product_id),
-        item.size,
-        quantity
+      await client.query(
+        `
+          INSERT INTO inventory_movements
+            (external_reference, product_id, size, quantity)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (external_reference, product_id, size) DO NOTHING
+        `,
+        [externalReference, String(item.product_id), item.size, quantity],
       );
     }
 
+    await client.query("COMMIT");
     return { deducted: true, items: items.length };
-  });
-
-  return deduct.immediate();
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 module.exports = {
+  initializeInventory,
   getInventory,
   setStock,
   deductApprovedOrderStock,

@@ -1,5 +1,5 @@
 const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
 
 export const API_URL = (
-  configuredApiUrl || "http://localhost:3000"
+  configuredApiUrl || (import.meta.env.DEV ? "http://localhost:3000" : "")
 ).replace(/\/+$/, "");

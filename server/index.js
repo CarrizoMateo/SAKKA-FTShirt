@@ -26,6 +26,7 @@ const sessionSameSite = process.env.SESSION_COOKIE_SAME_SITE || (isProduction ? 
 // Render y otros proxies terminan HTTPS antes de llegar a Express.
 app.set("trust proxy", 1);
 const {
+  initializeInventory,
   getInventory,
   setStock,
   deductApprovedOrderStock,
@@ -108,9 +109,9 @@ function requireAdmin(req, res, next) {
   });
 }
 
-app.get("/api/admin/inventory", requireAdmin, (req, res) => {
+app.get("/api/admin/inventory", requireAdmin, async (req, res) => {
   try {
-    return res.json({ inventory: getInventory() });
+    return res.json({ inventory: await getInventory() });
   } catch (error) {
     console.error("Error consultando inventario:", error);
     return res.status(500).json({
@@ -119,11 +120,11 @@ app.get("/api/admin/inventory", requireAdmin, (req, res) => {
   }
 });
 
-app.patch("/api/admin/inventory", requireAdmin, (req, res) => {
+app.patch("/api/admin/inventory", requireAdmin, async (req, res) => {
   try {
     const { productId, size, quantity } = req.body ?? {};
 
-    const item = setStock(
+    const item = await setStock(
       String(productId ?? ""),
       String(size ?? ""),
       quantity,
@@ -230,75 +231,44 @@ app.post("/api/admin/logout", (req, res) => {
 // ADMINISTRACIÓN DE PEDIDOS — RUTAS PROTEGIDAS
 // ======================================================
 
-const db = require("./db/database");
+const { query: dbQuery, initializeDatabase } = require("./db/database");
 const { getOrderItemsByReference } = require("./repositories/ordersRepository");
 
 // GET: listar pedidos con sus productos.
-app.get("/api/admin/orders", requireAdmin, (req, res) => {
+app.get("/api/admin/orders", requireAdmin, async (req, res) => {
   try {
-    const orders = db
-      .prepare(
-        `
-      SELECT *
-      FROM orders
-      ORDER BY id DESC
-    `,
-      )
-      .all();
-
-    const ordersWithItems = orders.map((order) => {
-      let shippingAddress = order.shipping_address;
-
-      if (typeof shippingAddress === "string") {
-        try {
-          shippingAddress = JSON.parse(shippingAddress);
-        } catch {
-          // Si no es JSON válido, conservar el valor original.
+    const result = await dbQuery("SELECT * FROM orders ORDER BY id DESC");
+    const ordersWithItems = await Promise.all(
+      result.rows.map(async (order) => {
+        let shippingAddress = order.shipping_address;
+        if (typeof shippingAddress === "string") {
+          try { shippingAddress = JSON.parse(shippingAddress); } catch { /* conservar original */ }
         }
-      }
-
-      return {
-        ...order,
-        shipping_address: shippingAddress,
-        items: getOrderItemsByReference(order.external_reference),
-      };
-    });
-
+        return {
+          ...order,
+          shipping_address: shippingAddress,
+          items: await getOrderItemsByReference(order.external_reference),
+        };
+      }),
+    );
     return res.json({ orders: ordersWithItems });
   } catch (error) {
     console.error("Error listando pedidos:", error.message);
-    return res.status(500).json({
-      error: "No se pudieron cargar los pedidos.",
-    });
+    return res.status(500).json({ error: "No se pudieron cargar los pedidos." });
   }
 });
 
 // GET: estadísticas generales y facturación aprobada.
-app.get("/api/admin/stats", requireAdmin, (req, res) => {
+app.get("/api/admin/stats", requireAdmin, async (req, res) => {
   try {
-    const stats = db
-      .prepare(
-        `
-      SELECT
-        COUNT(*) AS total_orders,
-        SUM(CASE
-          WHEN payment_status = 'approved' THEN 1
-          ELSE 0
-        END) AS approved_orders,
-        SUM(CASE
-          WHEN payment_status = 'pending' THEN 1
-          ELSE 0
-        END) AS pending_orders,
-        SUM(CASE
-          WHEN payment_status = 'approved'
-          THEN total_amount
-          ELSE 0
-        END) AS approved_revenue
+    const result = await dbQuery(`
+      SELECT COUNT(*)::INTEGER AS total_orders,
+             COUNT(*) FILTER (WHERE payment_status = 'approved')::INTEGER AS approved_orders,
+             COUNT(*) FILTER (WHERE payment_status = 'pending')::INTEGER AS pending_orders,
+             COALESCE(SUM(total_amount) FILTER (WHERE payment_status = 'approved'), 0) AS approved_revenue
       FROM orders
-    `,
-      )
-      .get();
-
+    `);
+    const stats = result.rows[0] || {};
     return res.json({
       stats: {
         total_orders: Number(stats.total_orders || 0),
@@ -309,52 +279,32 @@ app.get("/api/admin/stats", requireAdmin, (req, res) => {
     });
   } catch (error) {
     console.error("Error cargando estadísticas:", error.message);
-    return res.status(500).json({
-      error: "No se pudieron cargar las estadísticas.",
-    });
+    return res.status(500).json({ error: "No se pudieron cargar las estadísticas." });
   }
 });
 
 // GET: resumen de producción de pedidos con pago aprobado.
-app.get("/api/admin/production-summary", requireAdmin, (req, res) => {
+app.get("/api/admin/production-summary", requireAdmin, async (req, res) => {
   try {
-    const summary = db
-      .prepare(
-        `
-        SELECT
-          oi.product_id,
-          oi.product_name,
-          oi.size,
-          SUM(oi.quantity) AS quantity
-        FROM order_items oi
-        INNER JOIN orders o ON o.id = oi.order_id
-        WHERE o.payment_status = 'approved'
-        GROUP BY
-          oi.product_id,
-          oi.product_name,
-          oi.size
-        ORDER BY
-          oi.product_name ASC,
-          oi.size ASC
-      `,
-      )
-      .all();
-
-    const totals = db
-      .prepare(
-        `
-        SELECT
-          COUNT(DISTINCT o.id) AS approved_orders,
-          COALESCE(SUM(oi.quantity), 0) AS total_shirts
-        FROM orders o
-        LEFT JOIN order_items oi ON oi.order_id = o.id
-        WHERE o.payment_status = 'approved'
-      `,
-      )
-      .get();
-
+    const summaryResult = await dbQuery(`
+      SELECT oi.product_id, oi.product_name, oi.size,
+             SUM(oi.quantity)::INTEGER AS quantity
+      FROM order_items oi
+      INNER JOIN orders o ON o.id = oi.order_id
+      WHERE o.payment_status = 'approved'
+      GROUP BY oi.product_id, oi.product_name, oi.size
+      ORDER BY oi.product_name ASC, oi.size ASC
+    `);
+    const totalsResult = await dbQuery(`
+      SELECT COUNT(DISTINCT o.id)::INTEGER AS approved_orders,
+             COALESCE(SUM(oi.quantity), 0)::INTEGER AS total_shirts
+      FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      WHERE o.payment_status = 'approved'
+    `);
+    const totals = totalsResult.rows[0] || {};
     return res.json({
-      summary: summary.map((item) => ({
+      summary: summaryResult.rows.map((item) => ({
         product_id: item.product_id,
         product_name: item.product_name,
         size: item.size || "Sin talle registrado",
@@ -367,100 +317,47 @@ app.get("/api/admin/production-summary", requireAdmin, (req, res) => {
     });
   } catch (error) {
     console.error("Error cargando resumen de producción:", error.message);
-
-    return res.status(500).json({
-      error: "No se pudo cargar el resumen de producción.",
-    });
+    return res.status(500).json({ error: "No se pudo cargar el resumen de producción." });
   }
 });
 
 // PATCH: actualizar únicamente el envío.
-app.patch("/api/admin/orders/:reference/shipping", requireAdmin, (req, res) => {
+app.patch("/api/admin/orders/:reference/shipping", requireAdmin, async (req, res) => {
   try {
     const reference = req.params.reference;
     const { shipping_status, tracking_number } = req.body ?? {};
-
-    const validStatuses = [
-      "pending",
-      "preparing",
-      "shipped",
-      "delivered",
-      "cancelled",
-    ];
-
-    if (
-      typeof shipping_status !== "string" ||
-      !validStatuses.includes(shipping_status)
-    ) {
-      return res.status(400).json({
-        error: "El estado de envío no es válido.",
-      });
+    const validStatuses = ["pending", "preparing", "shipped", "delivered", "cancelled"];
+    if (typeof shipping_status !== "string" || !validStatuses.includes(shipping_status)) {
+      return res.status(400).json({ error: "El estado de envío no es válido." });
     }
-
-    if (
-      tracking_number !== undefined &&
-      tracking_number !== null &&
-      typeof tracking_number !== "string"
-    ) {
-      return res.status(400).json({
-        error: "El número de seguimiento debe ser texto.",
-      });
+    if (tracking_number !== undefined && tracking_number !== null && typeof tracking_number !== "string") {
+      return res.status(400).json({ error: "El número de seguimiento debe ser texto." });
     }
-
     const trackingNumber = String(tracking_number ?? "").trim();
-
     if (trackingNumber.length > 150) {
-      return res.status(400).json({
-        error: "El número de seguimiento es demasiado largo.",
-      });
+      return res.status(400).json({ error: "El número de seguimiento es demasiado largo." });
     }
-
-    const existingOrder = db
-      .prepare(
-        `
-        SELECT id, external_reference
-        FROM orders
-        WHERE external_reference = ?
-      `,
-      )
-      .get(reference);
-
-    if (!existingOrder) {
-      return res.status(404).json({
-        error: "No se encontró el pedido.",
-      });
+    const existing = await dbQuery("SELECT id FROM orders WHERE external_reference = $1", [reference]);
+    if (!existing.rows[0]) {
+      return res.status(404).json({ error: "No se encontró el pedido." });
     }
-
-    db.prepare(
-      `
-        UPDATE orders
-        SET shipping_status = ?,
-            tracking_number = ?,
-            updated_at = datetime('now')
-        WHERE external_reference = ?
-      `,
-    ).run(shipping_status, trackingNumber || null, reference);
-
-    const updatedOrder = db
-      .prepare(
-        `
-        SELECT *
-        FROM orders
-        WHERE external_reference = ?
-      `,
-      )
-      .get(reference);
-
+    const updated = await dbQuery(`
+      UPDATE orders
+      SET shipping_status = $1,
+          tracking_number = $2,
+          shipping_updated_at = NOW(),
+          updated_at = NOW()
+      WHERE external_reference = $3
+      RETURNING *
+    `, [shipping_status, trackingNumber || null, reference]);
     return res.json({
       ok: true,
       message: "Envío actualizado correctamente.",
-      order: updatedOrder,
+      order: updated.rows[0],
     });
   } catch (error) {
     console.error("Error actualizando envío:", error.message);
-    return res.status(500).json({
-      error: "No se pudo actualizar el envío.",
-    });
+    return res.status(500).json({ error: "No se pudo actualizar el envío." });
   }
 });
 
@@ -475,9 +372,9 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-app.get("/api/inventory", (req, res) => {
+app.get("/api/inventory", async (req, res) => {
   try {
-    const inventory = getInventory().map((item) => ({
+    const inventory = (await getInventory()).map((item) => ({
       product_id: item.product_id,
       size: item.size,
       quantity: item.configured === 1
@@ -600,8 +497,8 @@ function validateItems(items) {
   };
 }
 
-function validateStock(items) {
-  const inventory = getInventory();
+async function validateStock(items) {
+  const inventory = await getInventory();
 
   for (const item of items) {
     if (!item.size) {
@@ -762,7 +659,7 @@ function ensureOrderShippingMatches(existingOrder, shipping) {
   );
 }
 
-app.get("/api/tracking/:reference", (req, res) => {
+app.get("/api/tracking/:reference", async (req, res) => {
   try {
     const reference = String(req.params.reference || "").trim();
 
@@ -772,7 +669,7 @@ app.get("/api/tracking/:reference", (req, res) => {
       });
     }
 
-    const order = findOrderByReference(reference);
+    const order = await findOrderByReference(reference);
 
     if (!order) {
       return res.status(404).json({
@@ -864,7 +761,7 @@ app.post("/api/orders", async (req, res) => {
 
     const { validatedItems, productsAmount } = itemsResult;
 
-    const stockResult = validateStock(validatedItems);
+    const stockResult = await validateStock(validatedItems);
 
 if (!stockResult.ok) {
   return res.status(409).json({
@@ -880,7 +777,7 @@ if (!stockResult.ok) {
 
     const externalReference = `SAKKA-${idempotencyKey}`;
 
-    const existingOrder = findOrderByReference(externalReference);
+    const existingOrder = await findOrderByReference(externalReference);
 
     if (existingOrder) {
       if (
@@ -899,7 +796,7 @@ if (!stockResult.ok) {
         });
       }
     } else {
-      saveOrder({
+      await saveOrder({
         external_reference: externalReference,
         provider_order_id: null,
         provider_payment_id: null,
@@ -914,7 +811,7 @@ if (!stockResult.ok) {
       });
     }
 
-    saveOrderItems(externalReference, validatedItems);
+    await saveOrderItems(externalReference, validatedItems);
 
     const amount = totalAmount.toFixed(2);
 
@@ -974,12 +871,12 @@ if (!stockResult.ok) {
       });
     }
 
-    linkProviderOrder(String(order.id), externalReference);
+    await linkProviderOrder(String(order.id), externalReference);
 
     const providerPayment = order.transactions?.payments?.[0];
 
     if (providerPayment?.id) {
-      updateProviderPayment(String(providerPayment.id), externalReference);
+      await updateProviderPayment(String(providerPayment.id), externalReference);
     }
 
     const paymentStatus = providerPayment?.status ?? null;
@@ -1017,7 +914,7 @@ if (!stockResult.ok) {
     }
 
     if (localStatus !== "pending") {
-      updatePaymentStatus(localStatus, externalReference);
+      await updatePaymentStatus(localStatus, externalReference);
     }
     if (localStatus === "approved") {
       await sendApprovedOrderEmail(externalReference);
@@ -1083,7 +980,7 @@ app.post("/api/checkout-preference", async (req, res) => {
 
     const { validatedItems, productsAmount } = itemsResult;
 
-    const stockResult = validateStock(validatedItems);
+    const stockResult = await validateStock(validatedItems);
 
 if (!stockResult.ok) {
   return res.status(409).json({
@@ -1118,7 +1015,7 @@ if (!stockResult.ok) {
 
     // Guardar el pedido antes de crear la preferencia,
     // para poder relacionarlo con el webhook.
-    saveOrder({
+    await saveOrder({
       external_reference: externalReference,
       provider_order_id: null,
       provider_payment_id: null,
@@ -1132,7 +1029,7 @@ if (!stockResult.ok) {
       shipping_address: shipping.address,
     });
 
-    saveOrderItems(externalReference, validatedItems);
+    await saveOrderItems(externalReference, validatedItems);
 
     const mpResponse = await fetch(
       "https://api.mercadopago.com/checkout/preferences",
@@ -1302,7 +1199,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    const localOrder = findOrderByReference(externalReference);
+    const localOrder = await findOrderByReference(externalReference);
 
     if (!localOrder) {
       console.error("No se encontró el pedido de SAKKA.", {
@@ -1332,9 +1229,9 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
     }
 
     if (eventType === "payment") {
-      updateProviderPayment(String(resource.id), externalReference);
+      await updateProviderPayment(String(resource.id), externalReference);
     } else {
-      linkProviderOrder(String(resource.id), externalReference);
+      await linkProviderOrder(String(resource.id), externalReference);
     }
 
     let localStatus = null;
@@ -1377,13 +1274,13 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
     }
 
     if (localStatus) {
-      updatePaymentStatus(localStatus, externalReference);
+      await updatePaymentStatus(localStatus, externalReference);
     }
 
     if (localStatus === "approved") {
       // Descontar stock solo con el pago aprobado.
       // La función debe ser transaccional e idempotente.
-      const stockResult = deductApprovedOrderStock(externalReference);
+      const stockResult = await deductApprovedOrderStock(externalReference);
 
       if (
         stockResult.deducted === false &&
@@ -1407,8 +1304,17 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
 // INICIAR SERVIDOR
 // ======================================================
 
-app.listen(PORT, () => {
-  console.log(`Backend SAKKA escuchando en puerto ${PORT}`);
+async function startServer() {
+  await initializeDatabase();
+  await initializeInventory();
 
-  console.log("Cliente de Mercado Pago configurado.");
+  app.listen(PORT, () => {
+    console.log(`Backend SAKKA escuchando en puerto ${PORT}`);
+    console.log("PostgreSQL conectado. API de SAKKA lista.");
+  });
+}
+
+startServer().catch((error) => {
+  console.error("No se pudo iniciar SAKKA:", error);
+  process.exit(1);
 });

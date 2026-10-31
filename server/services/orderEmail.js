@@ -10,7 +10,7 @@ const {
 } = require("../repositories/ordersRepository");
 
 async function sendApprovedOrderEmail(reference) {
-  const order = findOrderByReference(reference);
+  const order = await findOrderByReference(reference);
 
   if (!order || order.payment_status !== "approved") {
     return;
@@ -22,12 +22,12 @@ async function sendApprovedOrderEmail(reference) {
   }
 
   // Solo una ejecución puede reclamar el envío.
-  if (!claimEmail(reference)) {
+  if (!(await claimEmail(reference))) {
     return;
   }
 
   try {
-    const items = getOrderItemsByReference(reference);
+    const items = await getOrderItemsByReference(reference);
 
     if (!items.length) {
       throw new Error("El pedido no tiene productos registrados.");
@@ -39,10 +39,10 @@ async function sendApprovedOrderEmail(reference) {
       items,
     });
 
-    markEmailSent(reference);
+    await markEmailSent(reference);
     console.log("Email de confirmación enviado:", reference);
   } catch (error) {
-    markEmailError(error.message, reference);
+    await markEmailError(error.message, reference);
     console.error("Error enviando email de SAKKA:", error.message);
   }
 }
