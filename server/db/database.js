@@ -7,7 +7,7 @@ if (!process.env.DATABASE_URL) {
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   // Neon requiere TLS. La cadena de conexión normalmente incluye sslmode=require.
-  ssl: process.env.PGSSL === "disable" ? false : { rejectUnauthorized: false },
+  ssl: process.env.PGSSL === "disable" ? false : { rejectUnauthorized: true },
   max: Number(process.env.PG_POOL_MAX || 5),
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 15000,
