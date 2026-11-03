@@ -1109,7 +1109,7 @@ function Footer() {
 
             {/* WhatsApp */}
             <a
-              href="https://wa.me/5491124797206"
+              href={SAKKA_WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="WhatsApp SAKKA"
