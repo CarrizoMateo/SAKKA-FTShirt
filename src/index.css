@@ -1776,3 +1776,226 @@ img {
     font-size: 14px;
   }
 }
+
+
+/* ======================================================
+   ACCESIBILIDAD TIPOGRÁFICA — texto general más legible
+   Se conservan las jerarquías y la identidad visual SAKKA.
+   ====================================================== */
+
+.announcement-bar {
+  font-size: 11px;
+}
+
+.brand-copy small {
+  font-size: 9px;
+}
+
+.desktop-nav a {
+  font-size: 14px;
+}
+
+.eyebrow,
+.section-heading .eyebrow,
+.retro-content .eyebrow,
+.cart-header .eyebrow {
+  font-size: 12px;
+}
+
+.hero-description {
+  font-size: 16px;
+}
+
+.button {
+  font-size: 13px;
+}
+
+.hero-benefits span {
+  font-size: 12px;
+}
+
+.hero-image-label span {
+  font-size: 12px;
+}
+
+.text-link {
+  font-size: 13px;
+}
+
+.category-content span {
+  font-size: 12px;
+}
+
+.product-image .product-tag {
+  font-size: 11px;
+}
+
+.product-info h3 {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.product-price {
+  font-size: 16px;
+}
+
+.size-list button {
+  font-size: 11px;
+}
+
+.add-button {
+  font-size: 12px;
+}
+
+.retro-content > p:not(.eyebrow) {
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.benefit h3 {
+  font-size: 13px;
+}
+
+.benefit p {
+  font-size: 12px;
+}
+
+.footer-brand > p,
+.footer-newsletter > p {
+  font-size: 13px;
+}
+
+.footer-column h3,
+.footer-newsletter h3 {
+  font-size: 14px;
+}
+
+.footer-column a {
+  font-size: 12px;
+}
+
+.footer-newsletter input {
+  font-size: 13px;
+}
+
+.footer-bottom p {
+  font-size: 11px;
+}
+
+.cart-item-info h3,
+.cart-item-info strong {
+  font-size: 16px;
+}
+
+.cart-item-info p,
+.cart-summary > p {
+  font-size: 14px;
+}
+
+.remove-item,
+.continue-shopping {
+  font-size: 14px;
+}
+
+.quantity-control span {
+  font-size: 14px;
+}
+
+.faq-answer {
+  font-size: 16px;
+}
+
+.faq-contact a {
+  font-size: 14px;
+}
+
+@media (max-width: 1050px) {
+  .desktop-nav a {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 760px) {
+  .announcement-bar {
+    font-size: 10px;
+  }
+
+  .hero-description {
+    font-size: 16px;
+  }
+
+  .hero-benefits span {
+    font-size: 11px;
+  }
+
+  .section-heading .eyebrow {
+    font-size: 11px;
+  }
+
+  .text-link {
+    font-size: 12px;
+  }
+
+  .category-content span {
+    font-size: 12px;
+  }
+
+  .product-info h3 {
+    font-size: 13px;
+    min-height: 38px;
+  }
+
+  .product-price {
+    font-size: 15px;
+  }
+
+  .size-list button {
+    font-size: 11px;
+  }
+
+  .add-button {
+    font-size: 11px;
+  }
+
+  .retro-content > p:not(.eyebrow) {
+    font-size: 14px;
+  }
+
+  .benefit h3 {
+    font-size: 12px;
+  }
+
+  .benefit p {
+    font-size: 11px;
+  }
+
+  .footer-column a {
+    font-size: 13px;
+  }
+
+  .footer-bottom p {
+    font-size: 12px;
+  }
+
+  .faq-question {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  .button {
+    font-size: 12px;
+  }
+
+  .product-info h3 {
+    font-size: 12px;
+  }
+
+  .add-button {
+    font-size: 11px;
+  }
+
+  .size-list button {
+    font-size: 10px;
+  }
+}
