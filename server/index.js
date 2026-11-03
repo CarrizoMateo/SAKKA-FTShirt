@@ -1087,6 +1087,10 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
     const requestId = req.headers["x-request-id"];
 
     const dataId = String(req.query["data.id"] || "");
+    // Mercado Pago requiere data.id en minúsculas para calcular la firma
+    // cuando el identificador de la orden contiene caracteres alfanuméricos.
+    // Conservamos dataId original para consultar el recurso con su ID exacto.
+    const signatureDataId = dataId.toLowerCase();
 
     const eventType = String(req.query.type || req.body?.type || "");
 
@@ -1124,7 +1128,7 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
       });
     }
 
-    const manifest = `id:${dataId};request-id:${requestId};ts:${timestamp};`;
+    const manifest = `id:${signatureDataId};request-id:${requestId};ts:${timestamp};`;
 
     const expectedSignature = crypto
       .createHmac("sha256", secret)
