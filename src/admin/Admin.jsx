@@ -68,6 +68,7 @@ export default function Admin() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(false);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [editing, setEditing] = useState(null);
@@ -238,6 +239,33 @@ export default function Admin() {
     } catch (err) {
       setError(err.message);
       await loadDashboard();
+    }
+  }
+
+  async function cleanupSandboxOrders() {
+    const confirmed = window.confirm(
+      "Vas a eliminar los 5 pedidos de prueba (1 aprobado y 4 pendientes) y sus productos asociados. Las cantidades del inventario y los movimientos de stock se conservarán. ¿Continuar?",
+    );
+
+    if (!confirmed) return;
+
+    setCleanupLoading(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const result = await apiRequest("/orders/cleanup-sandbox", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      setNotice(result.message || "Pedidos de prueba eliminados.");
+      setSelectedOrder(null);
+      await loadDashboard();
+    } catch (err) {
+      setError(err.message || "No se pudieron limpiar los pedidos de prueba.");
+      await loadDashboard();
+    } finally {
+      setCleanupLoading(false);
     }
   }
 
@@ -453,9 +481,24 @@ export default function Admin() {
                 Consultá los pagos y actualizá la logística.
               </p>
             </div>
-            <span className="admin-order-count">
-              {filteredOrders.length} pedidos
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span className="admin-order-count">
+                {filteredOrders.length} pedidos
+              </span>
+              {Number(stats.total_orders) === 5 &&
+                Number(stats.approved_orders) === 1 &&
+                Number(stats.pending_orders) === 4 && (
+                  <button
+                    type="button"
+                    className="admin-secondary-button"
+                    onClick={cleanupSandboxOrders}
+                    disabled={cleanupLoading}
+                    style={{ borderColor: "#d92332", color: "#b91e2b" }}
+                  >
+                    {cleanupLoading ? "Limpiando..." : "Limpiar pedidos de prueba"}
+                  </button>
+                )}
+            </div>
           </div>
 
           <div className="admin-filters">
