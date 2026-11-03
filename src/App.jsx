@@ -639,7 +639,7 @@ function FeaturedProducts({
             ? "CAMISETAS"
             : activeCategoryName || "CAMISETAS"
         }
-        link={activeCategory !== "todos" ? "Ver todas" : null}
+        link={activeCategory !== "todos" ? "Ver todas las camisetas" : null}
         href="#productos"
         onReset={() => onSelectCategory("todos")}
       />
