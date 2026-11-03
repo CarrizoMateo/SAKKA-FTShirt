@@ -258,6 +258,63 @@ app.get("/api/admin/orders", requireAdmin, async (req, res) => {
   }
 });
 
+// POST: reintentar el correo de confirmación de un pedido ya aprobado.
+app.post("/api/admin/orders/:reference/resend-confirmation", requireAdmin, async (req, res) => {
+  try {
+    const reference = String(req.params.reference || "").trim();
+    const order = await findOrderByReference(reference);
+
+    if (!order) {
+      return res.status(404).json({ error: "No se encontró el pedido." });
+    }
+
+    if (order.payment_status !== "approved") {
+      return res.status(409).json({
+        error: "Solo se pueden enviar confirmaciones de pedidos con pago aprobado.",
+      });
+    }
+
+    if (order.confirmation_email_status === "sent") {
+      return res.json({
+        ok: true,
+        emailStatus: "sent",
+        message: "El correo de confirmación ya fue enviado.",
+      });
+    }
+
+    await sendApprovedOrderEmail(reference);
+    const updatedOrder = await findOrderByReference(reference);
+    const emailStatus = updatedOrder?.confirmation_email_status || "pending";
+
+    if (emailStatus === "sent") {
+      return res.json({
+        ok: true,
+        emailStatus,
+        message: "Correo de confirmación enviado correctamente.",
+      });
+    }
+
+    if (emailStatus === "sending") {
+      return res.status(202).json({
+        ok: true,
+        emailStatus,
+        message: "El envío del correo ya está en curso.",
+      });
+    }
+
+    return res.status(502).json({
+      error: updatedOrder?.confirmation_email_error ||
+        "No se pudo enviar el correo de confirmación.",
+      emailStatus,
+    });
+  } catch (error) {
+    console.error("Error reintentando correo de confirmación:", error.message);
+    return res.status(500).json({
+      error: "No se pudo reintentar el correo de confirmación.",
+    });
+  }
+});
+
 // GET: estadísticas generales y facturación aprobada.
 app.get("/api/admin/stats", requireAdmin, async (req, res) => {
   try {
