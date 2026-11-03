@@ -215,6 +215,32 @@ export default function Admin() {
     }
   }
 
+  async function retryConfirmationEmail(order) {
+    setError("");
+    setNotice("");
+
+    try {
+      const result = await apiRequest(
+        `/orders/${encodeURIComponent(order.external_reference)}/resend-confirmation`,
+        {
+          method: "POST",
+          body: JSON.stringify({}),
+        },
+      );
+
+      setNotice(result.message || "Se procesó el envío del correo.");
+      setSelectedOrder((current) =>
+        current
+          ? { ...current, confirmation_email_status: result.emailStatus || current.confirmation_email_status }
+          : current,
+      );
+      await loadDashboard();
+    } catch (err) {
+      setError(err.message);
+      await loadDashboard();
+    }
+  }
+
   const filteredOrders = orders.filter((order) => {
     const term = search.trim().toLowerCase();
 
@@ -631,6 +657,33 @@ export default function Admin() {
                 <strong>Fecha:</strong>{" "}
                 {selectedOrder.created_at || "No disponible"}
               </p>
+            </div>
+
+            <div className="admin-detail-section">
+              <h3>Confirmación por email</h3>
+              <p>
+                <strong>Estado:</strong>{" "}
+                {selectedOrder.confirmation_email_status === "sent"
+                  ? "Enviado"
+                  : selectedOrder.confirmation_email_status === "sending"
+                    ? "En proceso"
+                    : selectedOrder.confirmation_email_status === "error"
+                      ? "Error de envío"
+                      : "Pendiente"}
+              </p>
+              {selectedOrder.payment_status === "approved" &&
+                selectedOrder.confirmation_email_status !== "sent" && (
+                  <button
+                    type="button"
+                    className="admin-secondary-button"
+                    onClick={() => retryConfirmationEmail(selectedOrder)}
+                    disabled={selectedOrder.confirmation_email_status === "sending"}
+                  >
+                    {selectedOrder.confirmation_email_status === "sending"
+                      ? "Envío en curso..."
+                      : "Reintentar correo de confirmación"}
+                  </button>
+                )}
             </div>
 
             <div className="admin-detail-section">
