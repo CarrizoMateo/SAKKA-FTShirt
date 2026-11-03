@@ -231,7 +231,7 @@ app.post("/api/admin/logout", (req, res) => {
 // ADMINISTRACIÓN DE PEDIDOS — RUTAS PROTEGIDAS
 // ======================================================
 
-const { query: dbQuery, initializeDatabase } = require("./db/database");
+const { query: dbQuery, initializeDatabase, pool: dbPool } = require("./db/database");
 const { getOrderItemsByReference } = require("./repositories/ordersRepository");
 
 // GET: listar pedidos con sus productos.
@@ -312,6 +312,78 @@ app.post("/api/admin/orders/:reference/resend-confirmation", requireAdmin, async
     return res.status(500).json({
       error: "No se pudo reintentar el correo de confirmación.",
     });
+  }
+});
+
+// POST: limpiar los cinco pedidos de sandbox antes de activar producción.
+app.post("/api/admin/orders/cleanup-sandbox", requireAdmin, async (req, res) => {
+  if (process.env.MP_ENVIRONMENT !== "test") {
+    return res.status(409).json({
+      error: "La limpieza solo está habilitada mientras Mercado Pago está en entorno de prueba.",
+    });
+  }
+
+  const client = await dbPool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `SELECT id, external_reference, payment_status, provider_order_id
+       FROM orders
+       ORDER BY id
+       FOR UPDATE`,
+    );
+    const orders = result.rows;
+    const approved = orders.filter((order) => order.payment_status === "approved");
+    const pending = orders.filter((order) => order.payment_status === "pending");
+    const knownSandboxReference =
+      "SAKKA-389bf77a-49e3-4f4f-abf8-205fd182cfbb";
+
+    const isExpectedSandboxSet =
+      orders.length === 5 &&
+      approved.length === 1 &&
+      pending.length === 4 &&
+      approved[0].external_reference === knownSandboxReference &&
+      String(approved[0].provider_order_id || "").startsWith("ORDTST") &&
+      orders.every((order) =>
+        ["approved", "pending"].includes(order.payment_status),
+      );
+
+    if (!isExpectedSandboxSet) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        error: "No se borró nada: los pedidos actuales ya no coinciden exactamente con los cinco registros de prueba esperados.",
+      });
+    }
+
+    const ids = orders.map((order) => order.id);
+    const deleted = await client.query(
+      "DELETE FROM orders WHERE id = ANY($1::bigint[]) RETURNING id",
+      [ids],
+    );
+
+    await client.query("COMMIT");
+
+    console.log("Pedidos sandbox eliminados:", {
+      count: deleted.rowCount,
+      inventoryPreserved: true,
+      inventoryMovementsPreserved: true,
+    });
+
+    return res.json({
+      ok: true,
+      deletedOrders: deleted.rowCount,
+      message: `Se eliminaron ${deleted.rowCount} pedidos de prueba. El inventario y los movimientos de stock se conservaron.`,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("Error limpiando pedidos sandbox:", error.message);
+    return res.status(500).json({
+      error: "No se pudieron limpiar los pedidos de prueba.",
+    });
+  } finally {
+    client.release();
   }
 });
 
