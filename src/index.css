@@ -1999,3 +1999,69 @@ img {
     font-size: 10px;
   }
 }
+
+
+/* Refuerzo de legibilidad del pie de página */
+.footer-brand > p,
+.footer-newsletter > p {
+  font-size: 15px;
+  line-height: 1.85;
+}
+
+.footer-column h3,
+.footer-newsletter h3 {
+  font-size: 16px;
+}
+
+.footer-column a {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.social-links {
+  gap: 14px;
+}
+
+.social-links a {
+  width: 34px;
+  height: 34px;
+  font-size: 11px;
+}
+
+.footer-newsletter input {
+  font-size: 14px;
+  padding: 14px 12px;
+}
+
+.footer-newsletter form button {
+  width: 44px;
+}
+
+.footer-bottom p {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .footer-brand > p,
+  .footer-newsletter > p {
+    font-size: 14px;
+  }
+
+  .footer-column h3,
+  .footer-newsletter h3 {
+    font-size: 15px;
+  }
+
+  .footer-column a {
+    font-size: 14px;
+  }
+
+  .footer-newsletter input {
+    font-size: 14px;
+  }
+
+  .footer-bottom p {
+    font-size: 12px;
+  }
+}
