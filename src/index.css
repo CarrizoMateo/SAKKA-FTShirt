@@ -2065,3 +2065,31 @@ img {
     font-size: 12px;
   }
 }
+
+
+.hero-whatsapp-benefit {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #e6e6e6;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.hero-whatsapp-benefit:hover {
+  color: #25d366;
+}
+
+.hero-whatsapp-benefit svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .hero-whatsapp-benefit {
+    font-size: 11px;
+  }
+}
