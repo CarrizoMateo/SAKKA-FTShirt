@@ -596,3 +596,93 @@
   padding: 0 16px 16px;
   border-top: 1px solid #e5e7eb;
 }
+
+/* Tipografía administrativa más cómoda de leer */
+.admin-muted {
+  font-size: 14px;
+}
+
+.admin-eyebrow {
+  font-size: 12px;
+}
+
+.admin-login-card label,
+.admin-modal label {
+  font-size: 14px;
+}
+
+.admin-primary-button,
+.admin-secondary-button,
+.admin-edit-button {
+  font-size: 14px;
+}
+
+.admin-back-link,
+.admin-secure-label {
+  font-size: 14px;
+}
+
+.admin-stat-card p {
+  font-size: 14px;
+}
+
+.admin-panel-heading h2,
+.admin-modal h2 {
+  font-size: 23px;
+}
+
+.admin-order-count {
+  font-size: 13px;
+}
+
+.admin-search input,
+.admin-filters select {
+  font-size: 14px;
+}
+
+.admin-table {
+  font-size: 14px;
+}
+
+.admin-table th {
+  font-size: 12px;
+}
+
+.admin-table td {
+  font-size: 14px;
+}
+
+.admin-detail-section h3 {
+  font-size: 16px;
+}
+
+.admin-detail-section p,
+.admin-detail-product {
+  font-size: 14px;
+}
+
+.admin-detail-total {
+  font-size: 17px;
+}
+
+.inventory-product-toggle {
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  .admin-muted {
+    font-size: 14px;
+  }
+
+  .admin-table th {
+    font-size: 12px;
+  }
+
+  .admin-table td {
+    font-size: 14px;
+  }
+
+  .admin-detail-section p {
+    font-size: 14px;
+  }
+}
