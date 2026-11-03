@@ -763,14 +763,9 @@ onClick={() =>
                     })}
                   </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      margin: "12px 0",
-                    }}
-                  >
+                  <div className="product-view-switch" role="group" aria-label={`Vista de ${product.name}`}>
                     <button
+                      className={`product-view-button ${currentView === "front" ? "is-active" : ""}`}
                       type="button"
                       aria-pressed={currentView === "front"}
                       onClick={() =>
@@ -779,21 +774,12 @@ onClick={() =>
                           [product.id]: "front",
                         }))
                       }
-                      style={{
-                        flex: 1,
-                        padding: "9px",
-                        border: "1px solid #222",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        background: currentView === "front" ? "#222" : "white",
-                        color: currentView === "front" ? "white" : "#222",
-                        fontWeight: 600,
-                      }}
                     >
                       FRENTE
                     </button>
 
                     <button
+                      className={`product-view-button ${currentView === "back" ? "is-active" : ""}`}
                       type="button"
                       aria-pressed={currentView === "back"}
                       onClick={() =>
@@ -802,16 +788,6 @@ onClick={() =>
                           [product.id]: "back",
                         }))
                       }
-                      style={{
-                        flex: 1,
-                        padding: "9px",
-                        border: "1px solid #222",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        background: currentView === "back" ? "#222" : "white",
-                        color: currentView === "back" ? "white" : "#222",
-                        fontWeight: 600,
-                      }}
                     >
                       ESPALDA
                     </button>
