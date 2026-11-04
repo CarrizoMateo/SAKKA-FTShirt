@@ -661,8 +661,8 @@ function FeaturedProducts({
         }
         title={
           activeCategory === "todos"
-            ? "CAMISETAS"
-            : activeCategoryName || "CAMISETAS"
+            ? "CAMISETAS DE FÚTBOL"
+            : activeCategoryName || "CAMISETAS DE FÚTBOL"
         }
         link={activeCategory !== "todos" ? "Ver todas las camisetas" : null}
         href="#productos"
