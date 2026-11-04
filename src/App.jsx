@@ -1297,6 +1297,36 @@ function Store() {
 
 export default function App() {
   const pathname = window.location.pathname.replace(/\/+$/, "");
+  const isPrivatePath = ["/admin", "/seguimiento", "/prueba-tarjeta"].includes(pathname);
+
+  useEffect(() => {
+    const robots = document.querySelector('meta[name="robots"]');
+    if (robots) {
+      robots.content = isPrivatePath
+        ? "noindex, nofollow"
+        : "index, follow, max-image-preview:large";
+    }
+
+    if (isPrivatePath) {
+      document.title =
+        pathname === "/admin"
+          ? "Panel administrativo | SAKKA Kits"
+          : pathname === "/seguimiento"
+            ? "Seguimiento de pedido | SAKKA Kits"
+            : "Prueba de pago | SAKKA Kits";
+      document.querySelector('link[rel="canonical"]')?.remove();
+    } else {
+      document.title =
+        "SAKKA Kits | Camisetas de fútbol retro y ediciones especiales";
+      let canonical = document.querySelector('link[rel="canonical"]');
+      if (!canonical) {
+        canonical = document.createElement("link");
+        canonical.rel = "canonical";
+        document.head.appendChild(canonical);
+      }
+      canonical.href = "https://sakka-ftshirt.vercel.app/";
+    }
+  }, [pathname, isPrivatePath]);
 
   // Pantalla temporal para probar el formulario aislado
   if (pathname === "/prueba-tarjeta") {
