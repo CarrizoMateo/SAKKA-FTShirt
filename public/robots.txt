@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Rutas operativas que no aportan contenido de búsqueda.
+Disallow: /api/
+Disallow: /prueba-tarjeta
+
+Sitemap: https://sakka-ftshirt.vercel.app/sitemap.xml
