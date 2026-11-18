@@ -18,6 +18,16 @@ const PRODUCTS = [
   { id: "13", name: "Juventus Kappa 1995/96" },
   { id: "14", name: "Napoli NR 1988/89" },
   { id: "15", name: "Napoli NR 1985/86" },
+  { id: "16", name: "Atlético de Madrid 2004/05" },
+  { id: "17", name: "River Plate 2025/26" },
+  { id: "18", name: "Schalke 04 2011/12" },
+  { id: "19", name: "Napoli 2024/25" },
+  { id: "20", name: "Boca Juniors 2003/04" },
+  { id: "21", name: "Benfica 2024/25" },
+  { id: "22", name: "Brasil Nike 2024/25" },
+  { id: "23", name: "Paris Saint-Germain 2024/25" },
+  { id: "24", name: "Juventus 2025/26" },
+  { id: "25", name: "Inter 2025/26" },
 ];
 
 async function initializeInventory() {
