@@ -12,8 +12,9 @@ import {
 } from "lucide-react";
 import "./admin.css";
 import Inventory from "./Inventory.jsx";
+import { API_URL } from "../api";
 
-const API = "http://localhost:3000/api/admin";
+const API = `${API_URL}/api/admin`;
 
 const money = (value) =>
   new Intl.NumberFormat("es-AR", {
@@ -89,7 +90,7 @@ export default function Admin() {
       }
     }, 8000);
 
-    fetch("http://localhost:3000/api/admin/me", {
+    fetch(`${API_URL}/api/admin/me`, {
       credentials: "include",
     })
       .then(async (response) => {
