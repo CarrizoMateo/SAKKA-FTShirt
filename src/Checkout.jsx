@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { CardPayment, Wallet } from "@mercadopago/sdk-react";
 import { ArrowLeft, ShieldCheck, Truck } from "lucide-react";
 
-const API_URL = "http://localhost:3000";
+import { API_URL } from "./api";
 
 function formatPrice(value) {
   return new Intl.NumberFormat("es-AR", {
