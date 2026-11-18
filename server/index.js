@@ -42,6 +42,16 @@ const PRODUCT_CATALOG = {
   13: { name: "Juventus Kappa 1995/96", price: 60000 },
   14: { name: "Napoli NR 1988/89", price: 60000 },
   15: { name: "Napoli NR 1985/86", price: 60000 },
+  16: { name: "Atlético de Madrid 2004/05", price: 60000 },
+  17: { name: "River Plate 2025/26", price: 60000 },
+  18: { name: "Schalke 04 2011/12", price: 60000 },
+  19: { name: "Napoli 2024/25", price: 60000 },
+  20: { name: "Boca Juniors 2003/04", price: 60000 },
+  21: { name: "Benfica 2024/25", price: 60000 },
+  22: { name: "Brasil Nike 2024/25", price: 60000 },
+  23: { name: "Paris Saint-Germain 2024/25", price: 60000 },
+  24: { name: "Juventus 2025/26", price: 60000 },
+  25: { name: "Inter 2025/26", price: 60000 },
 };
 
 if (!process.env.MP_ACCESS_TOKEN) {
@@ -56,9 +66,27 @@ const mpClient = new MercadoPagoConfig({
 // Se conserva para compatibilidad con la integración existente.
 const paymentClient = new Payment(mpClient);
 
+// Permitir el frontend de producción y, opcionalmente, varios dominios separados por coma.
+const allowedOrigins = (
+  process.env.FRONTEND_URLS ||
+  process.env.FRONTEND_URL ||
+  "http://localhost:5173"
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.set("trust proxy", 1);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origen no permitido por CORS"));
+    },
     credentials: true,
   }),
 );
@@ -80,8 +108,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // Desarrollo local; cambiar al publicar con HTTPS
-      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 8,
     },
   }),

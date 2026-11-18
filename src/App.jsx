@@ -17,6 +17,7 @@ import "./index.css";
 import { useEffect, useState } from "react";
 
 import Checkout from "./Checkout.jsx";
+import { API_URL } from "./api";
 
 import CardPaymentTest from "./CardPaymentTest.jsx";
 
@@ -202,6 +203,96 @@ const products = [
     categories: ["clubes", "retro"],
     imageFront: "/images/camisetas/Napoli NR 1985-86 Frente.png",
     imageBack: "/images/camisetas/Napoli NR 1985-86 Detras.png",
+  },
+  {
+    id: 16,
+    name: "Atlético de Madrid 2004/05",
+    description: "Rojiblanca con detalles azules y gráficos inspirados en Spider-Man 2.",
+    price: 60000,
+    categories: ["clubes", "retro"],
+    imageFront: "/images/camisetas/Atl Madrid 2004-05 Frente.png",
+    imageBack: "/images/camisetas/Atl Madrid 2004-05 Detras.png",
+  },
+  {
+    id: 17,
+    name: "River Plate 2025/26",
+    description: "Versión negra con franjas rojas, detalles blancos y sponsor Betano.",
+    price: 60000,
+    categories: ["clubes"],
+    imageFront: "/images/camisetas/River Plate 2025-26 Frente.png",
+    imageBack: "/images/camisetas/River Plate 2025-26 Detras.png",
+  },
+  {
+    id: 18,
+    name: "Schalke 04 2011/12",
+    description: "Azul real con cuello blanco, franjas Adidas y sponsor Gazprom.",
+    price: 60000,
+    categories: ["clubes", "retro"],
+    imageFront: "/images/camisetas/Schalke 04 2011-12 Frente.png",
+    imageBack: "/images/camisetas/Schalke 04 2011-12 Detras.png",
+  },
+  {
+    id: 19,
+    name: "Napoli 2024/25",
+    description: "Azul celeste EA7 con cuello blanco y sponsor MSC.",
+    price: 60000,
+    categories: ["clubes"],
+    imageFront: "/images/camisetas/Napoli 2024-25 Frente.png",
+    imageBack: "/images/camisetas/Napoli 2024-25 Detras.png",
+  },
+  {
+    id: 20,
+    name: "Boca Juniors 2003/04",
+    description: "Azul y oro con banda amarilla central y sponsor Pepsi.",
+    price: 60000,
+    categories: ["clubes", "retro"],
+    imageFront: "/images/camisetas/Boca Juniors 2003-04 Frente.png",
+    imageBack: "/images/camisetas/Boca Juniors 2003-04 Detras.png",
+  },
+  {
+    id: 21,
+    name: "Benfica 2024/25",
+    description: "Roja Adidas con detalles blancos y sponsor Emirates.",
+    price: 60000,
+    categories: ["clubes"],
+    imageFront: "/images/camisetas/Benfica 2024-25 Frente.png",
+    imageBack: "/images/camisetas/Benfica 2024-25 Detras.png",
+  },
+  {
+    id: 22,
+    name: "Brasil Nike 2024/25",
+    description: "Amarilla Nike con detalles verdes en el cuello y las mangas.",
+    price: 60000,
+    categories: ["selecciones"],
+    imageFront: "/images/camisetas/Brasil Nike 2024-25 Frente.png",
+    imageBack: "/images/camisetas/Brasil Nike 2024-25 Detras.png",
+  },
+  {
+    id: 23,
+    name: "Paris Saint-Germain 2024/25",
+    description: "Blanca Nike con franja gráfica azul y roja y sponsor Qatar Airways.",
+    price: 60000,
+    categories: ["clubes"],
+    imageFront: "/images/camisetas/Paris Saint-Germain 2024-25 Frente.png",
+    imageBack: "/images/camisetas/Paris Saint-Germain 2024-25 Detras.png",
+  },
+  {
+    id: 24,
+    name: "Juventus 2025/26",
+    description: "Negra Adidas con estampado tonal y detalles dorados.",
+    price: 60000,
+    categories: ["clubes"],
+    imageFront: "/images/camisetas/Juventus 2025-26 Frente.png",
+    imageBack: "/images/camisetas/Juventus 2025-26 Detras.png",
+  },
+  {
+    id: 25,
+    name: "Inter 2025/26",
+    description: "Azul y negra a rayas, con detalles turquesa y sponsor Betsson.",
+    price: 60000,
+    categories: ["clubes"],
+    imageFront: "/images/camisetas/Inter 2025-26 Frente.png",
+    imageBack: "/images/camisetas/Inter 2025-26 Detras.png",
   },
 ];
 
@@ -595,7 +686,7 @@ function FeaturedProducts({
 
     const loadInventory = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/inventory");
+        const response = await fetch(`${API_URL}/api/inventory`);
 
         if (!response.ok) {
           throw new Error("No se pudo consultar el stock.");

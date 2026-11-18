@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import { API_URL } from "../api";
 import {
   Package,
   RefreshCw,
@@ -7,7 +8,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-const API = "http://localhost:3000/api/admin";
+const API = `${API_URL}/api/admin`;
 
 export default function Inventory() {
   const [inventory, setInventory] = useState([]);
