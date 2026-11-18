@@ -17,6 +17,7 @@ import "./index.css";
 import { useEffect, useState } from "react";
 
 import Checkout from "./Checkout.jsx";
+import { API_URL } from "./api";
 
 import CardPaymentTest from "./CardPaymentTest.jsx";
 
@@ -685,7 +686,7 @@ function FeaturedProducts({
 
     const loadInventory = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/inventory");
+        const response = await fetch(`${API_URL}/api/inventory`);
 
         if (!response.ok) {
           throw new Error("No se pudo consultar el stock.");
