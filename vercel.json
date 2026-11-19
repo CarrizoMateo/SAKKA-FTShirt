@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://sakka-ftshirt.onrender.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://sakka-ftshirt-nueva.onrender.com/api/:path*" },
     { "source": "/seguimiento", "destination": "/index.html" },
     { "source": "/admin", "destination": "/admin/index.html" }
   ]
