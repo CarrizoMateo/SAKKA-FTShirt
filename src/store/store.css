@@ -416,3 +416,13 @@ section[id]{scroll-margin-top:72px}
 .tk-h3{margin:18px 0 6px;font:700 .8rem var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .tk-cancel{margin:14px 0;padding:12px 14px;border-left:4px solid var(--hot-ink);background:#fff1f0}
 @media (max-width:520px){.tk-ev li{grid-template-columns:1fr;gap:0}.steps li{font-size:.62rem;letter-spacing:.04em}}
+
+/* Iconos sociales: nombres de plataformas reemplazados por sus marcas */
+.chan a.social-link{grid-template-columns:42px minmax(0,1fr) auto}
+.chan .social-icon{display:grid;place-items:center;width:36px;height:36px;border:1.5px solid currentColor;border-radius:50%;transition:background .18s,color .18s,border-color .18s}
+.chan .social-icon svg{display:block;width:19px;height:19px}
+.chan a.social-link:hover .social-icon{background:var(--hot);border-color:var(--hot);color:var(--ink)}
+.foot .footer-socials{display:flex;align-items:center;gap:10px;padding-block:2px}
+.foot .footer-socials a{display:grid;place-items:center;width:38px;height:38px;border:1px solid #565b64;border-radius:50%;color:#fff;transition:background .18s,color .18s,border-color .18s}
+.foot .footer-socials a:hover{background:var(--hot);border-color:var(--hot);color:var(--ink);text-decoration:none}
+.foot .footer-socials svg{display:block;width:19px;height:19px}
