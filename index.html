@@ -1,13 +1,233 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>sakka-ftshirt</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sakka T-Shirt</title>
+<meta name="description" content="Camisetas de fútbol retro, históricas y ediciones especiales. Elegí tu talle, pagá online y seguí tu pedido con un código.">
+<link rel="icon" href="/img/logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#inicio" aria-label="SAKKA Football T-Shirts, inicio"><img src="/img/logo.jpg" alt="SAKKA Football T-Shirts" width="4180" height="1430"></a>
+    <nav class="nav" id="nav" aria-label="Principal">
+      <a href="#inicio">Inicio</a>
+      <a href="#catalogo" data-cat="Todas">Catálogo</a>
+      <a href="#catalogo" data-cat="Retro">Camisetas retro</a>
+      <a href="#catalogo" data-cat="Ediciones especiales">Ediciones especiales</a>
+      <a href="#contacto">Contacto</a>
+      <a href="#seguimiento" class="nav-track">Seguir mi pedido</a>
+    </nav>
+    <div class="tools">
+      <button class="ibtn" type="button" data-act="open-cart" aria-label="Abrir carrito">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <span class="badge" id="badge" data-n="0">0</span>
+      </button>
+      <button class="ibtn burger" type="button" id="burger" data-act="burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+<section class="hero on-dark" id="inicio">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Camisetas retro · históricas · ediciones especiales</p>
+      <h1>El fútbol nunca <em>pasa de moda.</em></h1>
+      <p class="lead">Las camisetas que marcaron una época. Reviví la historia del fútbol con SAKKA.</p>
+      <div class="cta">
+        <a class="btn primary" href="#catalogo" data-cat="Todas">Ver catálogo</a>
+        <a class="btn light" href="#catalogo" data-cat="Ediciones especiales">Ediciones especiales</a>
+      </div>
+    </div>
+    <div class="art" id="heroArt" aria-hidden="true"></div>
+  </div>
+</section>
+<div class="trust on-dark">
+  <div class="wrap">
+    <span><b>Pago</b>Tarjeta de crédito, débito o Mercado Pago</span>
+    <span><b>Entrega</b>Envío a tu localidad, con seguimiento por código</span>
+    <span><b>Talles</b>Cada camiseta muestra su stock real por talle</span>
+  </div>
+</div>
+
+<section class="sec white" id="categorias" aria-labelledby="h-cats">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="kick">Explorá por mundo</p><h2 class="t" id="h-cats">Elegí tu camiseta</h2></div>
+    </div>
+    <div class="cats" id="cats"></div>
+  </div>
+</section>
+
+<section class="sec" id="catalogo" aria-labelledby="h-cat">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="kick">Catálogo</p><h2 class="t" id="h-cat">Piezas de colección</h2><p class="sub">Filtrá por equipo, época o precio. Elegí el talle directo en la tarjeta.</p></div>
+    </div>
+    <div class="tools-bar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <label class="sr" for="q">Buscar camisetas</label>
+        <input id="q" type="search" placeholder="Equipo, modelo o temporada" autocomplete="off">
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Categoría"></div>
+      <div class="selects">
+        <label class="field"><span>Equipo</span><select id="f-team"></select></label>
+        <label class="field"><span>Equipación</span><select id="f-type"></select></label>
+        <label class="field"><span>Época</span><select id="f-era"></select></label>
+        <label class="field"><span>Precio</span><select id="f-price"></select></label>
+        <label class="field"><span>Ordenar</span>
+          <select id="f-sort"><option value="rel">Destacados primero</option><option value="asc">Precio: menor a mayor</option><option value="desc">Precio: mayor a menor</option><option value="year">Más antiguas primero</option></select>
+        </label>
+      </div>
+    </div>
+    <div class="count-row"><span id="count" aria-live="polite"></span><button class="linkbtn" type="button" data-act="clear" id="clearBtn" hidden>Limpiar filtros</button></div>
+    <div class="grid" id="grid"></div>
+  </div>
+</section>
+
+<section class="sec about on-dark" id="nosotros" aria-labelledby="h-about">
+  <div class="wrap">
+    <div>
+      <p class="kick">Sobre SAKKA</p>
+      <h2 class="t" id="h-about">Más que una camiseta, una historia.</h2>
+      <p class="txt">SAKKA nace de la pasión por el fútbol y por esas camisetas que quedaron inmortalizadas en la historia del deporte. Cada pieza del catálogo representa un equipo, una época y un momento que los hinchas no olvidan.</p>
+      <div class="cta"><a class="btn primary" href="#catalogo" data-cat="Retro">Ver camisetas retro</a></div>
+    </div>
+    <div class="ruler" id="ruler"></div>
+  </div>
+</section>
+
+<section class="sec white" id="preguntas-frecuentes" aria-labelledby="h-faq">
+  <div class="wrap">
+    <div class="sec-head"><div><p class="kick">Antes de comprar</p><h2 class="t" id="h-faq">Preguntas frecuentes</h2></div></div>
+    <div class="faq">
+      <details><summary>¿Cómo elijo mi talle?</summary><p>Cada camiseta muestra los talles disponibles y cuántas unidades quedan. Los talles agotados aparecen tachados y no se pueden agregar al carrito. Si tenés dudas, escribinos a sakkadrops@gmail.com antes de comprar.</p></details>
+      <details><summary>¿Cómo pago?</summary><p>Online, con tarjeta de crédito o débito o con tu cuenta de Mercado Pago. Los datos de la tarjeta los procesa Mercado Pago, esta página no los guarda. Pagás las camisetas y el envío juntos.</p></details>
+      <details><summary>¿Cuánto cuesta el envío y cómo sigo mi pedido?</summary><p>El costo depende de tu localidad y lo ves en el checkout antes de pagar. Los envíos los hacemos nosotros. Al comprar recibís un código (SAKKA-XXXXXX) por correo: ingresalo en “Seguir mi pedido” para ver si está pendiente, preparado, despachado o entregado.</p></details>
+      <details><summary>¿Puedo comprar un talle sin stock?</summary><p>No. El carrito no permite superar el stock de cada talle, así que lo que ves disponible es lo que podés comprar.</p></details>
+      <details><summary>¿Qué son las ediciones especiales?</summary><p>Son piezas fuera de la línea retro clásica, como las camisetas de Japón con ilustraciones de anime y flores de cerezo. Las encontrás en la categoría Ediciones especiales.</p></details>
+      <details><summary>¿Cómo contacto a SAKKA?</summary><p>Por WhatsApp al +54 9 11 2479-7206, por Instagram en @sakka_futbol, por TikTok en @sakkakits o por correo a sakkadrops@gmail.com. Contanos qué camiseta te interesa y, si ya compraste, el nombre con el que hiciste el pedido.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="sec contact" id="contacto" aria-labelledby="h-contact">
+  <div class="wrap">
+    <div>
+      <p class="kick">Contacto</p>
+      <h2 class="t" id="h-contact">¿Buscás una camiseta puntual?</h2>
+    </div>
+    <div>
+      <p style="margin:0 0 14px;font-size:1.05rem">Para consultas sobre talles o sobre un pedido, escribinos por el canal que prefieras.</p>
+      <ul class="chan">
+        <li><a href="https://wa.me/5491124797206?text=Hola%20SAKKA!%20Quiero%20consultar%20por%20una%20camiseta." target="_blank" rel="noopener"><span><b>WhatsApp</b><span class="v">+54 9 11 2479-7206</span></span><span class="ar" aria-hidden="true">→</span></a></li>
+        <li><a href="https://www.instagram.com/sakka_futbol/" target="_blank" rel="noopener"><span><b>Instagram</b><span class="v">@sakka_futbol</span></span><span class="ar" aria-hidden="true">→</span></a></li>
+        <li><a href="https://www.tiktok.com/@sakkakits" target="_blank" rel="noopener"><span><b>TikTok</b><span class="v">@sakkakits</span></span><span class="ar" aria-hidden="true">→</span></a></li>
+        <li><div class="row"><span><b>Correo</b><span class="v" id="mailTxt">sakkadrops@gmail.com</span></span><button class="btn" type="button" data-act="copy">Copiar</button></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot on-dark">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <img src="/img/logo.jpg" alt="SAKKA Football T-Shirts" width="4180" height="1430">
+        <p>Camisetas de fútbol retro, históricas y ediciones especiales. Piezas que cuentan una época.</p>
+      </div>
+      <div>
+        <h4>Navegación</h4>
+        <ul><li><a href="#inicio">Inicio</a></li><li><a href="#catalogo" data-cat="Todas">Catálogo</a></li><li><a href="#nosotros">Sobre SAKKA</a></li><li><a href="#preguntas-frecuentes">Preguntas frecuentes</a></li></ul>
+      </div>
+      <div>
+        <h4>Categorías</h4>
+        <ul><li><a href="#catalogo" data-cat="Retro">Retro</a></li><li><a href="#catalogo" data-cat="Selecciones">Selecciones</a></li><li><a href="#catalogo" data-cat="Clubes">Clubes</a></li><li><a href="#catalogo" data-cat="Ediciones especiales">Ediciones especiales</a></li></ul>
+      </div>
+      <div>
+        <h4>Redes y contacto</h4>
+        <ul><li><a href="https://www.instagram.com/sakka_futbol/" target="_blank" rel="noopener">Instagram @sakka_futbol</a></li><li><a href="https://www.tiktok.com/@sakkakits" target="_blank" rel="noopener">TikTok @sakkakits</a></li><li><a href="https://wa.me/5491124797206?text=Hola%20SAKKA!%20Quiero%20consultar%20por%20una%20camiseta." target="_blank" rel="noopener">WhatsApp +54 9 11 2479-7206</a></li><li>sakkadrops@gmail.com</li><li>Pagos: tarjeta o Mercado Pago</li><li><a href="#seguimiento">Seguir mi pedido</a></li><li><a href="#preguntas-frecuentes">Información de compra</a></li></ul>
+      </div>
+    </div>
+    <div class="legal"><span>© 2026 SAKKA Football T-Shirts. Todos los derechos reservados.</span><span>Hecho para hinchas.</span></div>
+  </div>
+</footer>
+
+<!-- detalle de producto -->
+<div class="detail" id="detail" role="dialog" aria-modal="true" aria-labelledby="d-title" hidden>
+  <div class="d-bar">
+    <div class="wrap">
+      <button class="back" type="button" data-act="close-detail" id="d-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Volver al catálogo
+      </button>
+      <button class="ibtn cartopen" type="button" data-act="open-cart" aria-label="Abrir carrito">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <span class="badge" data-n="0" data-badge>0</span>
+      </button>
+    </div>
+  </div>
+  <div class="wrap d-grid" id="d-main"></div>
+</div>
+
+<!-- checkout -->
+<div class="detail" id="checkout" role="dialog" aria-modal="true" aria-labelledby="co-title" hidden>
+  <div class="d-bar">
+    <div class="wrap">
+      <button class="back" type="button" data-act="close-checkout" id="co-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Seguir comprando
+      </button>
+      <button class="ibtn cartopen" type="button" data-act="open-cart" aria-label="Abrir carrito">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <span class="badge" data-n="0" data-badge>0</span>
+      </button>
+    </div>
+  </div>
+  <div class="wrap co-grid" id="co-main"></div>
+</div>
+
+
+<!-- seguimiento -->
+<div class="detail" id="track" role="dialog" aria-modal="true" aria-labelledby="tk-title" hidden>
+  <div class="d-bar"><div class="wrap">
+    <button class="back" type="button" data-act="close-track" id="tk-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Volver a la tienda
+    </button>
+  </div></div>
+  <div class="wrap"><div class="tk-wrap">
+    <h1 id="tk-title">Seguí tu pedido</h1>
+    <p class="lead2">Ingresá el código que te llegó por correo al comprar.</p>
+    <form class="tk-form" id="tk-form" novalidate>
+      <label class="field"><span>Código de seguimiento</span><input id="tk-code" placeholder="SAKKA-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+      <button class="btn primary" type="submit" id="tk-btn">Buscar pedido</button>
+    </form>
+    <div id="tk-out" aria-live="polite"></div>
+  </div></div>
+</div>
+
+<!-- carrito -->
+<div class="scrim" id="scrim" data-act="close-cart"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-title" aria-hidden="true">
+  <div class="dr-head drawer-dark">
+    <h2 id="dr-title">Tu carrito</h2>
+    <button class="ibtn" type="button" data-act="close-cart" id="dr-close" aria-label="Cerrar carrito">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="dr-body" id="dr-body"></div>
+  <div class="dr-foot" id="dr-foot"></div>
+</aside>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="/src/store/store.js"></script>
+</body>
 </html>
