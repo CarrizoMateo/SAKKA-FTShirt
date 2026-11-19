@@ -171,7 +171,7 @@ function buildCheckout(){
       <div class="pay-box-wrap"><h3>Tarjeta de crédito o débito</h3><p class="s">Los datos de la tarjeta los procesa Mercado Pago; esta página no los guarda.</p><div id="cardBox"></div></div>
       <div class="pay-sep">o</div>
       <div class="pay-box-wrap"><h3>Cuenta de Mercado Pago</h3><p class="s">Pagá con tu saldo, tarjetas guardadas o dinero en cuenta.</p>
-        <button class="btn" type="button" id="wallet-go" data-act="wallet-go">Pagar con Mercado Pago</button><div id="walletBox"></div></div>
+        <div id="walletBox"><p class="co-wait">Preparando el botón de Mercado Pago…</p></div></div>
       <div id="co-out" aria-live="polite"></div>
     </section>
   </div>
@@ -259,8 +259,16 @@ async function startPayment(){
   showErr('');refreshCheckout();
   const total=cartTotal()+z.price;
   $('#cardBox').innerHTML='<p class="co-wait">Cargando formulario de pago…</p>';
+  let mp;
   try{
-    const mp=await getMP();
+    mp=await getMP();
+  }catch(e){
+    $('#cardBox').innerHTML='';
+    $('#walletBox').innerHTML='';
+    showErr(e.message);
+    return;
+  }
+  try{
     $('#cardBox').innerHTML='';
     cardCtl=await mp.bricks().create('cardPayment','cardBox',{
       initialization:{amount:total,payer:{email:v.mail}},
@@ -271,7 +279,11 @@ async function startPayment(){
         onError:err=>{console.error(err)}
       }
     });
-  }catch(e){$('#cardBox').innerHTML='';showErr(e.message)}
+  }catch(e){
+    $('#cardBox').innerHTML='';
+    console.error('No se pudo cargar el formulario de tarjetas:',e);
+  }
+  await walletGo(mp);
 }
 function submitCard(formData,additional){
   return new Promise(async(resolve,reject)=>{
@@ -293,18 +305,24 @@ function submitCard(formData,additional){
     }
   });
 }
-async function walletGo(){
-  const btn=$('#wallet-go');if(coBusy)return;coBusy=true;btn.disabled=true;showErr('');
+async function walletGo(mpClient){
+  if(coBusy)return;
+  coBusy=true;showErr('');
+  const box=$('#walletBox');
+  box.innerHTML='<p class="co-wait">Preparando el botón de Mercado Pago…</p>';
   try{
-    const mp=await getMP();
+    const mp=mpClient||await getMP();
     const r=await api('/api/checkout-preference',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload())});
     try{lastCode(r.trackingCode)}catch(e){}
-    btn.hidden=true;
-    $('#walletBox').innerHTML='';
+    box.innerHTML='';
     walletCtl=await mp.bricks().create('wallet','walletBox',{initialization:{preferenceId:r.preferenceId,redirectMode:'self'}});
-    $('#walletBox').insertAdjacentHTML('afterend',`<p class="co-wait">Tu código de seguimiento es <b>${esc(r.trackingCode)}</b>. Tocá el botón azul para pagar en Mercado Pago; al terminar volvés acá.</p>`);
-  }catch(e){showErr(e.message);btn.disabled=false}
-  coBusy=false;
+    box.insertAdjacentHTML('afterend',`<p class="co-wait">Tu código de seguimiento es <b>${esc(r.trackingCode)}</b>. Tocá el botón de Mercado Pago para pagar; al terminar volvés acá.</p>`);
+  }catch(e){
+    box.innerHTML='<p class="co-wait">No pudimos preparar el pago con Mercado Pago. Probá nuevamente o elegí pagar con tarjeta.</p>';
+    showErr(e.message);
+  }finally{
+    coBusy=false;
+  }
 }
 function lastCode(c){if(c)try{localStorage.setItem('sakka-last-code',c)}catch(e){}}
 function savedCode(){try{return localStorage.getItem('sakka-last-code')||''}catch(e){return ''}}
@@ -324,8 +342,7 @@ async function finish(code,status){
 async function editData(){
   await unmountBricks();coStage='form';idemKey=null;
   $('#co-pay').hidden=true;$('#co-data').hidden=false;
-  const w=$('#wallet-go');if(w){w.hidden=false;w.disabled=false}
-  $$('#walletBox,#co-pay .co-wait').forEach(e=>e.id==='walletBox'?e.innerHTML='':e.remove());
+  $('#walletBox,#co-pay .co-wait').forEach(e=>e.id==='walletBox'?e.innerHTML='':e.remove());
   showErr('');refreshCheckout();
 }
 
@@ -545,7 +562,6 @@ document.addEventListener('click',e=>{
     case 'checkout':goCheckout();break;
     case 'close-checkout':location.hash='catalogo';break;
     case 'co-edit':editData();break;
-    case 'wallet-go':walletGo();break;
     case 'open-track':case 'track-code':closeCart();pendingTrack=el.dataset.code||'';if(location.hash==='#seguimiento')route();else location.hash='seguimiento';break;
     case 'close-track':location.hash='catalogo';break;
     case 'copy':{
