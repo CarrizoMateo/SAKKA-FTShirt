@@ -18,7 +18,7 @@ const openOrders = new Set();
 
 async function api(path, opts = {}) {
   const r = await fetch(API + '/api/admin' + path, {
-    credentials: 'same-origin',
+    credentials: 'include',
     ...opts,
     headers: { ...(opts.body ? { 'Content-Type': 'application/json' } : {}), ...(opts.headers || {}) },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
