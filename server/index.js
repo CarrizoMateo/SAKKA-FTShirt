@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 
-const { query } = require("./db/pool");
+const { query, tx } = require("./db/pool");
 const { ensureSchema } = require("./db/schema");
 const catalog = require("./repositories/catalogRepository");
 const orders = require("./repositories/ordersRepository");
@@ -810,6 +810,56 @@ admin.get(
   "/orders",
   wrap(async (req, res) => {
     res.json({ orders: await orders.listOrders() });
+  }),
+);
+
+// Elimina solo pedidos sin pago aprobado o ya reembolsados.
+// Si un pedido reembolsado todavía había descontado stock, lo devuelve antes de borrar.
+admin.delete(
+  "/orders/:code",
+  wrap(async (req, res) => {
+    const code = orders.normalizeTrackingCode(req.params.code);
+    if (!code) {
+      return res.status(400).json({ error: "El código del pedido no es válido." });
+    }
+
+    const result = await tx(async (client) => {
+      const { rows } = await client.query(
+        `SELECT id, tracking_code, payment_status, stock_status
+         FROM orders WHERE tracking_code = $1 FOR UPDATE`,
+        [code],
+      );
+      const order = rows[0];
+
+      if (!order) return { status: 404, error: "No se encontró el pedido." };
+
+      if (order.payment_status === "approved") {
+        return {
+          status: 409,
+          error: "No se puede eliminar un pedido con pago aprobado. Primero debe estar reembolsado.",
+        };
+      }
+
+      if (order.stock_status === "deducted") {
+        if (order.payment_status !== "refunded") {
+          return {
+            status: 409,
+            error: "El pedido tiene stock descontado. Solo se puede eliminar después de reembolsarlo.",
+          };
+        }
+
+        await stock.restockWithClient(client, order);
+      }
+
+      await client.query("DELETE FROM orders WHERE id = $1", [order.id]);
+      return { ok: true, code: order.tracking_code };
+    });
+
+    if (result.status) {
+      return res.status(result.status).json({ error: result.error });
+    }
+
+    return res.json({ ok: true, code: result.code });
   }),
 );
 
