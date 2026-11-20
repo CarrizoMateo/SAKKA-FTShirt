@@ -1,6 +1,8 @@
 import './admin.css';
 
-const API = (import.meta.env && import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+// El panel usa /api del mismo dominio: Vercel lo reescribe al backend de Render.
+// Así la cookie HttpOnly de sesión queda asociada a sakkafutbol.com.
+const API = '';
 const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -18,7 +20,7 @@ const openOrders = new Set();
 
 async function api(path, opts = {}) {
   const r = await fetch(API + '/api/admin' + path, {
-    credentials: 'include',
+    credentials: 'same-origin',
     ...opts,
     headers: { ...(opts.body ? { 'Content-Type': 'application/json' } : {}), ...(opts.headers || {}) },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
