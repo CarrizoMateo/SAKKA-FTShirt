@@ -94,6 +94,9 @@ function orderCard(o) {
     <summary><b>${esc(o.tracking_code)}</b><span style="min-width:0;overflow-wrap:anywhere">${esc(o.customer_name)} · ${esc(o.shipping_zone_name || '')}<br><span class="muted">${dt(o.created_at)} · ${money(o.total_amount)}</span></span>
       <span class="pill ${pc}">${pl}</span><span class="pill ${SHIP_CLASS[o.shipping_status] || ''}">${SHIP[o.shipping_status] || o.shipping_status}</span></summary>
     <div class="body">
+      <div class="row order-actions" style="justify-content:flex-end;margin:10px 0">
+        <button class="btn sm danger" data-act="delete" ${paid ? 'disabled title="No se puede eliminar un pedido con pago aprobado. Primero debe estar reembolsado."' : ''}>${paid ? 'Pago aprobado · no eliminar' : 'Eliminar pedido'}</button>
+      </div>
       ${stockWarn ? `<div class="warn"><b>Falta stock.</b> Se cobró este pedido pero el stock cargado no alcanzaba. Cargá stock y reintentá el descuento. <button class="btn sm" data-act="retry-stock">Reintentar descuento</button></div>` : ''}
       <div class="grid">
         <div><h3>Cliente y entrega</h3><dl><dt>Nombre</dt><dd>${esc(o.customer_name)}</dd><dt>Teléfono</dt><dd>${esc(o.customer_phone)}</dd><dt>Correo</dt><dd>${esc(o.customer_email)}</dd><dt>Dirección</dt><dd>${esc(addr)}</dd>${a.references ? `<dt>Referencias</dt><dd>${esc(a.references)}</dd>` : ''}<dt>Envío</dt><dd>${money(o.shipping_amount)}</dd><dt>Stock</dt><dd>${esc({ none: 'Sin descontar', deducted: 'Descontado', insufficient: 'Faltante', restocked: 'Devuelto' }[o.stock_status] || o.stock_status)}</dd><dt>Mail</dt><dd>${esc(o.confirmation_email_status || '-')} ${paid ? '<button class="btn sm" data-act="resend">Reenviar confirmación</button>' : ''}</dd></dl>
@@ -123,6 +126,37 @@ function viewOrders() {
 }
 async function orderAction(btn) {
   const card = btn.closest('.order'); const code = card.dataset.code; const act = btn.dataset.act;
+
+  if (act === 'delete') {
+    const order = S.orders.find((item) => item.tracking_code === code);
+    if (!order || order.payment_status === 'approved') {
+      toast('No se puede eliminar un pedido con pago aprobado.');
+      return;
+    }
+
+    const typed = window.prompt(
+      `Vas a eliminar el pedido ${code}. Esta acción no se puede deshacer.\\n\\nEscribí el código completo del pedido para confirmar:`
+    );
+    if (typed === null) return;
+    if (typed.trim().toUpperCase() !== code) {
+      toast('El código no coincide. No se eliminó el pedido.');
+      return;
+    }
+
+    btn.disabled = true;
+    try {
+      await api(`/orders/${code}`, { method: 'DELETE' });
+      openOrders.delete(code);
+      await loadAll();
+      renderShell();
+      toast(`Pedido ${code} eliminado.`);
+    } catch (e) {
+      fail(e);
+      btn.disabled = false;
+    }
+    return;
+  }
+
   btn.disabled = true;
   try {
     if (act === 'retry-stock') { await api(`/orders/${code}/retry-stock`, { method: 'POST' }); toast('Stock descontado.'); }
